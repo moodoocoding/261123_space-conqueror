@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우주정복자 - 태양계 행성 퀴즈 탐험</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #1b1b3a 0%, #0b0b1a 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .planet-glow {
+            transition: all 0.3s ease;
+        }
+        .planet-glow:hover {
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+        }
+        /* 반짝이는 별 애니메이션 */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-8 relative">
+
+    <!-- 배경 별들 생성 -->
+    <div id="stars-container" class="absolute inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+    <!-- 상단 헤더 -->
+    <header class="relative z-10 text-center py-4">
+        <h1 class="text-4xl md:text-5xl font-bold tracking-wider text-yellow-400 drop-shadow-[0_4px_10px_rgba(234,179,8,0.5)]">
+            🚀 우주정복자 🌌
+        </h1>
+        <p class="text-gray-300 text-lg mt-2">태양계의 행성들을 클릭하여 퀴즈를 풀고 우주를 정복해보세요!</p>
+        <div class="mt-4 inline-block bg-indigo-900/80 border border-indigo-500 px-6 py-2 rounded-full text-cyan-300 text-lg shadow-lg">
+            정복한 행성: <span id="score" class="font-bold text-yellow-300 text-xl">0</span> / 8
+        </div>
+    </header>
+
+    <!-- 메인 태양계 스테이지 영역 -->
+    <main class="relative z-10 flex-grow flex flex-col items-center justify-center my-8 max-w-6xl mx-auto w-full">
+        <div class="bg-indigo-950/40 backdrop-blur-md border border-indigo-800/60 rounded-3xl p-6 md:p-10 shadow-2xl w-full relative overflow-hidden">
+            
+            <!-- 궤도 선 (배경 장식) -->
+            <div class="absolute top-1/2 left-0 right-0 h-[2px] bg-indigo-500/20 -translate-y-1/2 z-0 hidden md:block"></div>
+
+            <!-- 행성 배치 컨테이너 -->
+            <div class="flex flex-wrap md:flex-nowrap items-center justify-around gap-6 md:gap-4 relative z-10 py-6">
+                
+                <!-- 태양 -->
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 md:w-24 md:h-24 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 shadow-[0_0_30px_rgba(245,158,11,0.8)] flex items-center justify-center text-2xl font-bold">
+                        ☀️
+                    </div>
+                    <span class="mt-2 text-sm text-yellow-300 font-semibold">태양</span>
+                </div>
+
+                <!-- 행성 목록 (수성, 금성, 지구, 화성, 목성, 토성, 천왕성, 해왕성) -->
+                <!-- 각 행성별 data-planet 속성 지정 -->
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="mercury">
+                    <div id="icon-mercury" class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-400 planet-glow flex items-center justify-center border-2 border-gray-300 text-lg">
+                        🪨
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">수성</span>
+                    <span id="badge-mercury" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="venus">
+                    <div id="icon-venus" class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-amber-200 planet-glow flex items-center justify-center border-2 border-amber-100 text-lg">
+                        ☁️
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">금성</span>
+                    <span id="badge-venus" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="earth">
+                    <div id="icon-earth" class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-blue-500 planet-glow flex items-center justify-center border-2 border-blue-300 text-lg">
+                        🌍
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">지구</span>
+                    <span id="badge-earth" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="mars">
+                    <div id="icon-mars" class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-red-600 planet-glow flex items-center justify-center border-2 border-red-400 text-lg">
+                        🔴
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">화성</span>
+                    <span id="badge-mars" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="jupiter">
+                    <div id="icon-jupiter" class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-amber-600 planet-glow flex items-center justify-center border-2 border-amber-400 text-xl shadow-[inset_-5px_-5px_10px_rgba(0,0,0,0.5)]">
+                        🪐
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">목성</span>
+                    <span id="badge-jupiter" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="saturn">
+                    <div id="icon-saturn" class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-yellow-200 planet-glow flex items-center justify-center border-2 border-yellow-100 text-xl">
+                        🪐
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">토성</span>
+                    <span id="badge-saturn" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="uranus">
+                    <div id="icon-uranus" class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-cyan-300 planet-glow flex items-center justify-center border-2 border-cyan-100 text-lg">
+                        🔵
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">천왕성</span>
+                    <span id="badge-uranus" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+                <div class="planet-btn flex flex-col items-center cursor-pointer group" data-planet="neptune">
+                    <div id="icon-neptune" class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-blue-700 planet-glow flex items-center justify-center border-2 border-blue-500 text-lg">
+                        🌀
+                    </div>
+                    <span class="mt-2 text-sm group-hover:text-yellow-300 font-medium">해왕성</span>
+                    <span id="badge-neptune" class="text-xs text-gray-400 mt-1">미정복</span>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 하단 설명 -->
+    <footer class="relative z-10 text-center text-gray-400 text-sm py-2">
+        <p>✨ 행성을 클릭하여 퀴즈를 풀고 태양계를 정복해보세요! ✨</p>
+    </footer>
+
+    <!-- 퀴즈 모달 팝업 -->
+    <div id="quiz-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border-2 border-indigo-500 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl relative transform transition-all scale-95 opacity-0 duration-300" id="quiz-modal-content">
+            <h2 id="modal-title" class="text-2xl md:text-3xl font-bold text-yellow-400 mb-4 text-center">행성 퀴즈</h2>
+            <p id="modal-question" class="text-lg text-gray-200 mb-6 text-center leading-relaxed"></p>
+            
+            <div id="modal-options" class="grid grid-cols-1 gap-3 mb-6">
+                <!-- 선택지 버튼들이 자바스크립트로 동적 생성됨 -->
+            </div>
+
+            <div class="flex justify-end">
+                <button id="close-modal-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-xl transition">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 성공 / 축하 모달 팝업 (잘 했어요! + 축하합니다) -->
+    <div id="success-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-indigo-900 to-purple-950 border-4 border-yellow-400 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center relative transform transition-all scale-95 opacity-0 duration-300" id="success-modal-content">
+            <div class="text-6xl mb-4 animate-bounce">🎉</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-yellow-300 mb-2">잘 했어요!</h2>
+            <p id="success-message" class="text-xl text-cyan-200 font-semibold mb-6">축하합니다! 행성을 정복했습니다!</p>
+            <button id="success-confirm-btn" class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold text-lg py-3 px-8 rounded-2xl shadow-lg transition transform hover:scale-105">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 로직 -->
+    <script>
+        // 배경 별 무작위 생성
+        const starsContainer = document.getElementById('stars-container');
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 3 + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.animationDelay = `${Math.random() * 3}s`;
+            starsContainer.appendChild(star);
+        }
+
+        // 행성별 퀴즈 데이터베이스
+        const planetQuizzes = {
+            mercury: {
+                name: "수성",
+                question: "태양계에서 태양과 가장 가까이 위치하며, 크기가 가장 작은 행성은 무엇일까요?",
+                options: ["금성", "수성", "화성", "지구"],
+                answer: 1 // 인덱스 (수성)
+            },
+            venus: {
+                name: "금성",
+                question: "태양계에서 두 번째로 태양에 가깝고, 두꺼운 이산화탄소 대기 때문에 온실효과가 가장 강력하게 일어나는 행성은?",
+                options: ["목성", "화성", "금성", "토성"],
+                answer: 2 // 금성
+            },
+            earth: {
+                name: "지구",
+                question: "생명체가 살아가고 있으며, 표면의 약 70%가 물로 덮여 있는 푸른빛의 행성은?",
+                options: ["지구", "화성", "천왕성", "해왕성"],
+                answer: 0 // 지구
+            },
+            mars: {
+                name: "화성",
+                question: "표면에 산화철(붉은 모래)이 많아 붉은색으로 보이며, '붉은 행성'이라고 불리는 곳은?",
+                options: ["수성", "목성", "토성", "화성"],
+                answer: 3 // 화성
+            },
+            jupiter: {
+                name: "목성",
+                question: "태양계 행성 중 크기와 질량이 가장 거대한 가스 행성은 무엇일까요?",
+                options: ["목성", "토성", "태양", "천왕성"],
+                answer: 0 // 목성
+            },
+            saturn: {
+                name: "토성",
+                question: "얼음과 암석 조각들로 이루어진 아름답고 거대한 고리를 가지고 있는 행성은?",
+                options: ["목성", "토성", "해왕성", "금성"],
+                answer: 1 // 토성
+            },
+            uranus: {
+                name: "천왕성",
+                question: "푸른빛을 띠며, 자전축이 거의 옆으로 누운 채 태양 주위를 도는 독특한 행성은?",
+                options: ["토성", "해왕성", "천왕성", "수성"],
+                answer: 2 // 천왕성
+            },
+            neptune: {
+                name: "해왕성",
+                question: "태양계 행성 중 태양에서 가장 멀리 떨어져 있으며, 강한 바람이 부는 푸른색의 행성은?",
+                options: ["천왕성", "해왕성", "화성", "목성"],
+                answer: 1 // 해왕성
+            }
+        };
+
+        // 정복 상태 관리 객체
+        const conqueredPlanets = {
+            mercury: false,
+            venus: false,
+            earth: false,
+            mars: false,
+            jupiter: false,
+            saturn: false,
+            uranus: false,
+            neptune: false
+        };
+
+        let currentActivePlanet = null;
+        let score = 0;
+
+        // DOM 요소 가져오기
+        const quizModal = document.getElementById('quiz-modal');
+        const quizModalContent = document.getElementById('quiz-modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalQuestion = document.getElementById('modal-question');
+        const modalOptions = document.getElementById('modal-options');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        const successModal = document.getElementById('success-modal');
+        const successModalContent = document.getElementById('success-modal-content');
+        const successMessage = document.getElementById('success-message');
+        const successConfirmBtn = document.getElementById('success-confirm-btn');
+        const scoreSpan = document.getElementById('score');
+
+        // 행성 버튼 클릭 이벤트 연결
+        document.querySelectorAll('.planet-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const planetKey = btn.getAttribute('data-planet');
+                
+                // 이미 정복한 행성인지 체크 가능 (원한다면 다시 풀 수 있게 설정)
+                currentActivePlanet = planetKey;
+                openQuizModal(planetKey);
+            });
+        });
+
+        // 퀴즈 모달 열기
+        function openQuizModal(planetKey) {
+            const data = planetQuizzes[planetKey];
+            modalTitle.textContent = `${data.name} 퀴즈 🪐`;
+            modalQuestion.textContent = data.question;
+            modalOptions.innerHTML = '';
+
+            data.options.forEach((optionText, index) => {
+                const optBtn = document.createElement('button');
+                optBtn.className = 'w-full text-left bg-indigo-900/60 hover:bg-indigo-700/80 border border-indigo-600/60 text-white font-medium p-4 rounded-xl transition flex items-center justify-between group shadow-md';
+                optBtn.innerHTML = `<span>${index + 1}. ${optionText}</span> <span class="text-indigo-400 group-hover:text-white">&rarr;</span>`;
+                
+                optBtn.addEventListener('click', () => {
+                    checkAnswer(index, data.answer, planetKey);
+                });
+                modalOptions.appendChild(optBtn);
+            });
+
+            quizModal.classList.remove('hidden');
+            setTimeout(() => {
+                quizModalContent.classList.remove('scale-95', 'opacity-0');
+                quizModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // 퀴즈 모달 닫기
+        closeModalBtn.addEventListener('click', () => {
+            quizModalContent.classList.remove('scale-100', 'opacity-100');
+            quizModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                quizModal.classList.add('hidden');
+            }, 300);
+        });
+
+        // 정답 확인 로직
+        function checkAnswer(selectedIndex, correctIndex, planetKey) {
+            // 모달 닫기
+            quizModalContent.classList.remove('scale-100', 'opacity-100');
+            quizModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                quizModal.classList.add('hidden');
+            }, 300);
+
+            if (selectedIndex === correctIndex) {
+                // 정답인 경우
+                if (!conqueredPlanets[planetKey]) {
+                    conqueredPlanets[planetKey] = true;
+                    score++;
+                    scoreSpan.textContent = score;
+
+                    // UI 업데이트 (정복 완료 표시)
+                    const badge = document.getElementById(`badge-${planetKey}`);
+                    badge.textContent = "정복 완료! ⭐";
+                    badge.className = "text-xs text-yellow-300 font-bold mt-1";
+
+                    const iconDiv = document.getElementById(`icon-${planetKey}`);
+                    iconDiv.classList.add('ring-4', 'ring-yellow-400', 'shadow-[0_0_20px_rgba(250,204,21,0.8)]');
+                }
+
+                // 성공 축하 팝업 표시 ("잘 했어요!", "축하합니다")
+                successMessage.textContent = `축하합니다! ${planetQuizzes[planetKey].name} 정복에 성공했습니다!`;
+                openSuccessModal();
+
+                // 모든 행성 정복 확인
+                if (score === 8) {
+                    setTimeout(() => {
+                        successMessage.textContent = "🏆 대단합니다! 태양계의 모든 행성을 정복하여 진정한 우주정복자가 되셨습니다! 🏆";
+                    }, 500);
+                }
+            } else {
+                // 오답인 경우
+                alert("아쉽네요! 정답이 아닙니다. 다시 도전해보세요!");
+            }
+        }
+
+        // 성공 모달 열기
+        function openSuccessModal() {
+            successModal.classList.remove('hidden');
+            setTimeout(() => {
+                successModalContent.classList.remove('scale-95', 'opacity-0');
+                successModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // 성공 모달 확인 버튼
+        successConfirmBtn.addEventListener('click', () => {
+            successModalContent.classList.remove('scale-100', 'opacity-100');
+            successModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                successModal.classList.add('hidden');
+            }, 300);
+        });
+    </script>
+</body>
+</html>
