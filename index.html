@@ -129,6 +129,33 @@ h1{font-size:clamp(22px,3vw,34px);color:#facc15;text-shadow:0 4px 12px rgba(234,
 .story{background:rgba(79,70,229,.2);border:1px solid rgba(129,140,248,.4);border-radius:16px;padding:12px 14px;text-align:left;margin-top:10px}
 .story p+p{margin-top:6px}
 
+/* ---------- 랭킹 ---------- */
+.pname{width:100%;margin-top:14px;padding:12px 14px;border-radius:14px;border:2px solid #6366f1;background:rgba(30,27,75,.8);
+  color:#fff;font-family:inherit;font-size:20px;outline:none;text-align:center}
+.pname:focus{border-color:#facc15}
+.pname::placeholder{color:#818cf8}
+.rec{margin-top:12px;background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.5);border-radius:14px;padding:10px;font-size:16px;line-height:1.7}
+.rec b{color:#fde047;font-weight:normal}
+.rec .big2{font-size:26px}
+.rbox{margin-top:12px;text-align:left}
+.rbox h3{font-weight:normal;font-size:20px;color:#facc15;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.rbox h3 span{font-size:15px;background:#22d3ee;color:#0f172a;border-radius:99px;padding:2px 12px}
+.rlist{display:grid;gap:6px}
+.ritem{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:8px;background:rgba(49,46,129,.45);border:2px solid transparent;border-radius:12px;padding:7px 10px}
+.ritem.first{border-color:rgba(250,204,21,.6)}
+.ritem.mine{border-color:#22d3ee;background:rgba(34,211,238,.15)}
+.ritem .rk{text-align:center;font-size:18px}
+.ritem .rn{font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ritem .rn em{font-style:normal;font-size:12px;background:#22d3ee;color:#0f172a;border-radius:6px;padding:0 5px;vertical-align:2px}
+.ritem .rn small{display:block;font-size:12px;color:#a5b4fc}
+.ritem .rs{font-size:18px;color:#fde047;white-space:nowrap}
+.rdel{background:#7f1d1d;border-radius:8px;padding:3px 9px;font-size:13px;margin-left:8px;color:#fff}
+.rnote{font-size:12px;color:#94a3b8;margin-top:8px}
+.rempty{color:#94a3b8;text-align:center;padding:14px 0}
+.rmgr{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.rmgr button{font-size:13px;color:#94a3b8;padding:5px 10px;border-radius:8px;border:1px solid #475569}
+.rmgr button.hide{display:none}
+
 @media (max-width:700px){
   #hdr{padding:6px 8px}
   .pill{font-size:13px;padding:4px 10px}.pill b{font-size:16px}.dot{width:9px;height:9px}
@@ -149,6 +176,7 @@ h1{font-size:clamp(22px,3vw,34px);color:#facc15;text-shadow:0 4px 12px rgba(234,
     <div class="pill">정복한 행성 <b id="score">0</b>/ 8 <span class="dots" id="dots"></span></div>
     <button class="hbtn" id="pauseBtn" onclick="togglePause()">⏸ 멈추기</button>
     <button class="hbtn" id="soundBtn" onclick="toggleSound()">🔊 소리 켬</button>
+    <button class="hbtn" style="background:rgba(202,138,4,.9);border-color:#facc15;color:#1e1b4b" onclick="openRank()">🏆 오늘의 랭킹</button>
     <button class="hbtn" onclick="resetAll()">🔄 처음부터</button>
   </div>
 </header>
@@ -164,6 +192,7 @@ h1{font-size:clamp(22px,3vw,34px);color:#facc15;text-shadow:0 4px 12px rgba(234,
 
 <div class="modal" id="modal"><div id="card"></div></div>
 
+<script src="board.js"></script>
 <script>
 // =====================================================
 // 1. 행성 정보와 퀴즈
@@ -262,6 +291,8 @@ const byK = k => P.find(p=>p.k===k);
 // 2. 상태
 // =====================================================
 let conquered = new Set(), paused = false, modalOpen = false, soundOn = true, allShown = false;
+// 랭킹용 기록: 이름, 탐험을 시작한 시각, 틀린 답 수
+let player = '', tStart = 0, wrongCount = 0, myId = null, rankManage = false, rankView = [];
 let lastQ = {}, curQ = null, rocket = null, toastTimer = null;
 const ang = P.map(()=>Math.random()*Math.PI*2);
 const omega = P.map((p,i)=>0.28/Math.pow(i+1,0.75));   // 안쪽 행성일수록 빨리 돌아요
@@ -385,7 +416,7 @@ function answer(j){
       ? `<button class="b main" onclick="closeModal()">확인</button>`
       : `<button class="b main" onclick="go('${k}')">🚀 정복하러 출발!</button>`}</div>`;
   }else{
-    sWrong();
+    sWrong(); wrongCount++;
     $('after').innerHTML = `<div class="ex no txt"><b>❌ 아쉬워요! 정답은 "${opts[ci].t}"</b>${q.ex}</div>
       <div class="acts"><button class="b sub" onclick="closeModal()">닫기</button><button class="b main" onclick="openQuiz('${k}')">🔁 다른 문제 도전</button></div>`;
   }
@@ -415,14 +446,85 @@ function showToast(msg){
 function openCert(){
   sAll(); $('card').dataset.lock = '1';
   for(let i=0;i<4;i++) setTimeout(()=>burst(W*(.2+Math.random()*.6),H*(.2+Math.random()*.4)),i*300);
+  // 오늘의 랭킹에 기록해요: 걸린 시간 + 틀릴 때마다 10초
+  const t = Date.now()-tStart;
+  myId = Board.submit({name:(player||'탐험가').slice(0,12),wrong:wrongCount,t:Math.round(t)});
   openModal(`<div class="center"><div class="big">🏆</div>
     <h2 style="font-size:34px;margin-top:6px">우주정복자 임명장</h2>
     <div class="story txt" style="text-align:center">
       <p>태양계의 행성 8개를 모두 정복했어요!</p>
-      <p>당신을 <b>진정한 우주정복자</b>로 임명합니다.</p>
+      <p><b>${esc(player||'탐험가')}</b> 님을 <b>진정한 우주정복자</b>로 임명합니다.</p>
       <p style="color:#fde047">👉 부스 선생님께 이 화면을 보여 주세요.</p>
     </div>
+    <div class="rec">⏱ 걸린 시간 <b>${fmt(t)}</b> · 틀린 답 <b>${wrongCount}번</b> (+${wrongCount*10}초)<br>
+      최종 기록 <b class="big2">${fmt(t+wrongCount*10000)}</b></div>
+    <div id="certRank"></div>
     <button class="b main wide" onclick="$('card').dataset.lock='';closeModal()">계속 탐험하기</button></div>`,true);
+  renderCertRank();
+}
+
+// =====================================================
+// 랭킹 (board.js가 Firebase에 저장해서 부스의 모든 기기가 같은 랭킹을 봐요)
+// 순위: 최종 기록(걸린 시간 + 틀린 답마다 10초)이 짧을수록 앞서요.
+// =====================================================
+const Board = createBoard('space');
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const score = r=>r.t+r.wrong*10000;
+const rankSort = (a,b)=>score(a)-score(b) || a.at-b.at;
+function fmt(ms){ const s = Math.round(ms/1000); return s>=60 ? `${Math.floor(s/60)}분 ${s%60}초` : `${s}초`; }
+function rankItems(list,opts){
+  return list.length ? list.map((r,i)=>{ const mine = myId && Board.isMine(r,[myId]);
+    return `<div class="ritem ${i===0?'first':''} ${mine?'mine':''}"><span class="rk">${i<3?['🥇','🥈','🥉'][i]:(i+1)}</span>
+      <span class="rn">${esc(r.name)}${mine?' <em>나</em>':''}<small>${fmt(r.t)} · 틀린 답 ${r.wrong}번</small></span>
+      <span class="rs">${fmt(score(r))}${opts.del?`<button class="rdel" onclick="delRank(${i})">삭제</button>`:''}</span></div>`; }).join('')
+    : '<p class="rempty">아직 오늘 기록이 없어요. 첫 번째 우주정복자가 되어 보세요!</p>';
+}
+function rankNote(){ return Board.online ? '🟢 오늘 부스에서 도전한 모든 친구의 순위예요. 실시간으로 바뀌어요.'
+  : '🟡 인터넷에 연결되지 않아 이 기기 기록만 보여요. 연결되면 자동으로 올라가요.'; }
+function renderCertRank(){
+  const el = $('certRank'); if(!el) return;
+  const sorted = Board.today().sort(rankSort), r = sorted.findIndex(x=>Board.isMine(x,[myId]))+1;
+  el.innerHTML = `<div class="rbox"><h3>🏆 오늘의 랭킹 ${r?`<span>나는 ${r}등!</span>`:''}</h3>
+    <div class="rlist">${rankItems(sorted.slice(0,5),{})}</div><p class="rnote">${rankNote()}</p></div>`;
+}
+function openRank(){
+  sClick(); rankManage = false; $('card').dataset.lock = '';
+  openModal(`<h2>🏆 오늘의 랭킹</h2>
+    <p class="txt" style="color:#a5b4fc;margin:4px 0 10px">행성 8개를 모두 정복한 최종 기록(걸린 시간 + 틀린 답마다 10초)이 짧은 순서예요.</p>
+    <div id="rankBody"></div>
+    <div class="acts"><button class="b main" onclick="closeModal()">닫기</button></div>
+    <div class="rmgr"><button onclick="toggleRankManage()" id="rmBtn"></button><button onclick="clearRank()" id="rcBtn"></button></div>`);
+  renderRankModal();
+}
+function renderRankModal(){
+  const el = $('rankBody'); if(!el) return;
+  const list = Board.today().sort(rankSort).slice(0,rankManage?50:10);
+  rankView = list;
+  el.innerHTML = `<div class="rlist">${rankItems(list,{del:rankManage})}</div><p class="rnote">${rankNote()}</p>`;
+  $('rmBtn').textContent = rankManage ? '✅ 관리 끝내기' : (Board.online && !Board.user ? '🔧 선생님 관리 (구글 로그인)' : '🔧 선생님 관리');
+  $('rcBtn').textContent = '🗑 오늘 기록 전체 지우기'; $('rcBtn').classList.toggle('hide',!rankManage);
+}
+async function toggleRankManage(){
+  if(!rankManage && Board.online && !Board.user){
+    try{ await Board.login(); }catch(e){ alert('선생님 로그인을 하지 못했어요. 다시 시도해 주세요.'); return; }
+  }
+  rankManage = !rankManage; renderRankModal();
+}
+async function delRank(i){
+  const r = rankView[i];
+  if(!r || !confirm(`"${r.name}" 기록을 지울까요?`)) return;
+  try{ await Board.remove(r); }catch(e){ alert('지우지 못했어요. Firebase 규칙에 적은 선생님 계정으로 로그인했는지 확인해 주세요.'); }
+}
+async function clearRank(){
+  if(!confirm('오늘 기록을 모두 지울까요? 지운 기록은 되살릴 수 없어요.')) return;
+  try{ await Board.clearToday(); }catch(e){ alert('지우지 못했어요. Firebase 규칙에 적은 선생님 계정으로 로그인했는지 확인해 주세요.'); }
+}
+Board.onChange(()=>{ renderCertRank(); renderRankModal(); });
+
+function beginGame(){
+  player = ($('playerName') && $('playerName').value.trim()) || '';
+  tStart = Date.now(); wrongCount = 0; myId = null;
+  $('card').dataset.lock = ''; closeModal(); audio(); sRight();
 }
 function startScreen(){
   $('card').dataset.lock = '1';
@@ -433,12 +535,15 @@ function startScreen(){
       <p>🪐 행성을 누르면 <b>정보 카드</b>가 나와요. 잘 읽어 보세요.</p>
       <p>❓ 카드를 읽고 <b>퀴즈</b>를 맞히면 우주 기지에서 <b>로켓</b>이 날아가 깃발을 꽂아요.</p>
       <p>🏆 행성 8개에 모두 깃발을 꽂으면 <b>우주정복자</b>가 돼요!</p>
+      <p>⏱ 탐험 시작부터 시간을 재요. 빨리, 그리고 덜 틀릴수록 <b>오늘의 랭킹</b>에서 앞서요!</p>
       <p style="color:#a5b4fc">행성이 빨라서 누르기 어려우면 위쪽 "멈추기" 버튼이나 아래쪽 바로가기를 써요.</p>
     </div>
-    <button class="b main wide" onclick="$('card').dataset.lock='';closeModal();audio();sRight()">🚀 탐험 시작!</button></div>`);
+    <input id="playerName" class="pname" maxlength="8" placeholder="이름 또는 별명 (랭킹에 올라가요)" value="${esc(player)}">
+    <button class="b main wide" style="margin-top:10px" onclick="beginGame()">🚀 탐험 시작!</button></div>`);
 }
 function resetAll(){
   conquered = new Set(); allShown = false; lastQ = {}; rocket = null; $('rocket').style.display = 'none';
+  player = ''; wrongCount = 0; myId = null;
   refreshUI(); startScreen();
 }
 
@@ -525,7 +630,7 @@ function frame(ms){
 // =====================================================
 // 8. 시작!
 // =====================================================
-resize(); refreshUI(); startScreen();
+resize(); refreshUI(); startScreen(); Board.init();
 requestAnimationFrame(frame);
 </script>
 </body>
