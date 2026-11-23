@@ -134,6 +134,8 @@ h1{font-size:clamp(22px,3vw,34px);color:#facc15;text-shadow:0 4px 12px rgba(234,
   color:#fff;font-family:inherit;font-size:20px;outline:none;text-align:center}
 .pname:focus{border-color:#facc15}
 .pname::placeholder{color:#818cf8}
+.pname.need{border-color:#f87171;background:rgba(127,29,29,.5);animation:shake .4s}
+.pname.need::placeholder{color:#fecaca}
 .rec{margin-top:12px;background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.5);border-radius:14px;padding:10px;font-size:16px;line-height:1.7}
 .rec b{color:#fde047;font-weight:normal}
 .rec .big2{font-size:26px}
@@ -467,7 +469,9 @@ function openCert(){
 // 랭킹 (board.js가 Firebase에 저장해서 부스의 모든 기기가 같은 랭킹을 봐요)
 // 순위: 최종 기록(걸린 시간 + 틀린 답마다 10초)이 짧을수록 앞서요.
 // =====================================================
-const Board = createBoard('space');
+// board.js를 못 불러와도 게임은 그대로 할 수 있게 빈 랭킹으로 대신해요
+const Board = typeof createBoard==='function' ? createBoard('space')
+  : {online:false,user:null,today:()=>[],submit:()=>null,isMine:()=>false,onChange(){},init(){},login(){},remove(){},clearToday(){}};
 const esc = s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const score = r=>r.t+r.wrong*10000;
 const rankSort = (a,b)=>score(a)-score(b) || a.at-b.at;
@@ -523,6 +527,11 @@ Board.onChange(()=>{ renderCertRank(); renderRankModal(); });
 
 function beginGame(){
   player = ($('playerName') && $('playerName').value.trim()) || '';
+  // 랭킹에 올라갈 이름(별명)을 적어야 시작해요
+  if(!player){
+    const i = $('playerName'); i.classList.add('need'); i.placeholder = '✏️ 이름(별명)을 먼저 적어 주세요!';
+    i.style.animation = 'none'; void i.offsetWidth; i.style.animation = ''; i.focus(); sWrong(); return;
+  }
   tStart = Date.now(); wrongCount = 0; myId = null;
   $('card').dataset.lock = ''; closeModal(); audio(); sRight();
 }
@@ -538,7 +547,7 @@ function startScreen(){
       <p>⏱ 탐험 시작부터 시간을 재요. 빨리, 그리고 덜 틀릴수록 <b>오늘의 랭킹</b>에서 앞서요!</p>
       <p style="color:#a5b4fc">행성이 빨라서 누르기 어려우면 위쪽 "멈추기" 버튼이나 아래쪽 바로가기를 써요.</p>
     </div>
-    <input id="playerName" class="pname" maxlength="8" placeholder="이름 또는 별명 (랭킹에 올라가요)" value="${esc(player)}">
+    <input id="playerName" class="pname" maxlength="8" placeholder="이름 또는 별명 (랭킹에 올라가요)" value="${esc(player)}" oninput="this.classList.remove('need')" onkeydown="if(event.key==='Enter')beginGame()">
     <button class="b main wide" style="margin-top:10px" onclick="beginGame()">🚀 탐험 시작!</button></div>`);
 }
 function resetAll(){
